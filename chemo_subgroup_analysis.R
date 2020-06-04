@@ -18,50 +18,53 @@ radiomics$Chemotherapy <- radiomics$chemo_before_ablation
 radiomics$Subcapsular <- as.logical(radiomics$Proximity_to_surface)
 radiomics$Time <- radiomics$Time_Duration_Applied
 
+# energy relationship -----------------------------------------
+energy.ratio <- lm(Ratio ~ Energy, data=radiomics)
+r_squared <- summary(energy.ratio.lm)$r.squared
+print(r_squared)
 
 # Chemotherapy summaries-----------------------------------------------------------
 mav.Chemotherapy <- subset(radiomics,
                           subset = radiomics$Chemotherapy == 'Yes')
 
-sum.Chemotherapy = nrow(mav.Chemotherapy)
-print(sum.Chemotherapy)
+print(sum(nrow(mav.Chemotherapy)))
 chemo.lm <- lm(EAV ~ PAV, data = mav.Chemotherapy)
 summary(chemo.lm)
 r_squared <- summary(chemo.lm)$r.squared
+print(r_squared)
+r_squared <- summary(nochemo.lm)$r.squared
 print(r_squared)
 
 mav.nochemo <- subset(radiomics,
                              subset = radiomics$Chemotherapy == 'No')
 nochemo.lm <- lm(EAV ~ PAV, data = mav.nochemo)
 summary(nochemo.lm)
-sum.nochemo = nrow(mav.noChemo)
 print('no of nonchemotherapy:')
-print(sum.nochemo)
-r_squared <- summary(nochemor.lm)$r.squared
+print(sum(nrow(mav.nochemo)))
 print(r_squared)
 
 # Subgroup interaction --------------------------------------------------------------------
 
-m.interaction <- lm(EAV ~ PAV*Chemotherapy, data = radiomics)
+m.interaction <- lmer(EAV ~ PAV*Chemotherapy + (1|Patient_ID), data = radiomics)
+
+#m.interaction <- lm(EAV ~ PAV*Chemotherapy, data = radiomics)
 library(interactions)
-interact_plot(m.interaction, pred = PAV, modx = Chemotherapy)
 interact_plot(m.interaction, pred = PAV, modx = Chemotherapy, interval = TRUE)
 anova(m.interaction)
 summary(m.interaction)
 
 # Obtain slopes ------------------------------------------------------------------
-m.interaction$coefficients
 m.lst <- lstrends(m.interaction, "Chemotherapy", var="PAV")
 print(m.lst)
 # Compare slopes ------------------------------------------------------------------
 pairs(m.lst)
+m.correlations <- radiomics[, cor(EAV, PAV), by=Chemotherapy]
 
 # test the difference between residual variances ---------------------------------------------
 library(psych)
 library(data.table)
 radiomics <- as.data.table(radiomics)
 
-m.correlations <- radiomics[, cor(EAV, PAV), by=Chemotherapy]
 m.correlations
 # Compare R values with Fisher's R to Z 
 radiomics <- as.data.table(radiomics)
